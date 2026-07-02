@@ -1,0 +1,32 @@
+[project]
+name = "shiftmanager"
+version = "0.1.0"
+description = "Discord writing shift bot with wordcount tracking"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "py-cord>=2.6",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+shiftbot = "shiftbot.__main__:main"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.20",
+]
