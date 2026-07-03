@@ -18,7 +18,7 @@ class StatsCog(commands.Cog):
     @discord.slash_command(name="trend", description="Show weekly word counts for the past 6 weeks")
     async def trend(self, ctx: discord.ApplicationContext):
         if ctx.guild_id is None:
-            await ctx.respond("❌ This command can only be used in a server.")
+            await ctx.respond("This command can only be used in a server.")
             return
         await ctx.defer()
         now_dt = now(tz())
@@ -46,7 +46,7 @@ class StatsCog(commands.Cog):
         sorted_weeks = sorted(weekly.items())
         max_total = max(t for _, t in sorted_weeks) or 1
         bar_width = 20
-        lines = ["📊 **Weekly Word Count Trend**\n"]
+        lines = ["**Weekly Word Count Trend**\n"]
         for label, total in sorted_weeks:
             filled = int((total / max_total) * bar_width)
             bar = "█" * filled + "░" * (bar_width - filled)
@@ -87,7 +87,7 @@ class StatsCog(commands.Cog):
             start_ts = datetime.combine(start_date, datetime.min.time(), tzinfo=tz()).timestamp()
             end_ts = datetime.combine(end_date, datetime.min.time(), tzinfo=tz()).timestamp() + 86400
         except (ValueError, IndexError):
-            await ctx.respond("❌ Invalid date format. Use YYYY-MM-DD.")
+            await ctx.respond("Invalid date format. Use YYYY-MM-DD.")
             return
 
         shifts = await self.bot.db.get_shifts_in_range(ctx.guild_id, start_ts, end_ts)
@@ -135,7 +135,7 @@ class StatsCog(commands.Cog):
         if deliverables:
             buf.write("Deliverables / Chapter Deadlines:\n")
             for d in deliverables:
-                status = "✅ Complete" if d["completed"] else "⏳ Pending"
+                status = "Complete" if d["completed"] else "Pending"
                 wc_info = f" — {d['wc']} words" if d["wc"] is not None else ""
                 buf.write(f"  {d['name']}: due {d['deadline']} [{status}]{wc_info}\n")
             buf.write("\n")

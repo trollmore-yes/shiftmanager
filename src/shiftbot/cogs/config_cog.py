@@ -22,4 +22,4 @@ class ConfigCog(commands.Cog):
     ):
         await ctx.defer()
         await self.bot.db.set_reminder_channel(ctx.guild_id, channel.id)
-        await ctx.respond(f"✅ Reminder channel set to {channel.mention}")
+        await ctx.respond(f"Reminder channel set to {channel.mention}")

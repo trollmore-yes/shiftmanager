@@ -90,6 +90,12 @@ class Database:
             (wc, ts, shift_id),
         )
 
+    async def extend_shift(self, shift_id: int, added_seconds: int, added_goal: int):
+        await self.execute(
+            "UPDATE shifts SET end_ts=end_ts + ?, wc_goal=wc_goal + ? WHERE id=?",
+            (added_seconds, added_goal, shift_id),
+        )
+
     async def conclude_shift(self, shift_id: int, wc: int):
         await self.execute(
             "UPDATE shifts SET final_wc=?, active=0 WHERE id=?",

@@ -58,6 +58,23 @@ async def test_weekly_total(db):
 
 
 @pytest.mark.asyncio
+async def test_extend_active_shift(db):
+    shift_id = await db.create_shift(
+        user_id=1, guild_id=10,
+        start_ts=1000.0, end_ts=1600.0,
+        wc_goal=500, start_wc=100,
+        update_freq=600, channel_id=100,
+    )
+
+    await db.extend_shift(shift_id, 1800, 250)
+
+    active = await db.get_active_shift(1, 10)
+    assert active is not None
+    assert active["end_ts"] == 3400.0
+    assert active["wc_goal"] == 750
+
+
+@pytest.mark.asyncio
 async def test_deliverables(db):
     rid = await db.create_deliverable(1, 10, "Chapter 1", "2026-08-01")
     assert rid is not None

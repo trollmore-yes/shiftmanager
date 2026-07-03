@@ -20,24 +20,33 @@ class ShiftBot(discord.Bot):
         super().__init__(intents=discord.Intents.default())
         self.db = Database()
         self._last_reminder_date: date | None = None
+        self._initialized = False
 
-    async def on_ready(self):
-        log.info("Bot logged in as %s", self.user)
-
-    async def setup_hook(self):
-        await self.db.connect()
         from shiftbot.cogs.shift import ShiftCog
         from shiftbot.cogs.deliverables import DeliverablesCog
         from shiftbot.cogs.stats import StatsCog
         from shiftbot.cogs.config_cog import ConfigCog
 
-        await self.add_cog(ShiftCog(self))
-        await self.add_cog(DeliverablesCog(self))
-        await self.add_cog(StatsCog(self))
-        await self.add_cog(ConfigCog(self))
+        self.add_cog(ShiftCog(self))
+        self.add_cog(DeliverablesCog(self))
+        self.add_cog(StatsCog(self))
+        self.add_cog(ConfigCog(self))
+        log.info("Cogs loaded (%d application commands pending)", len(self._pending_application_commands))
 
-        self.manage_shifts.start()
-        self.daily_reminders.start()
+    async def on_ready(self):
+        log.info("Bot logged in as %s", self.user)
+        if not self._initialized:
+            self._initialized = True
+            await self.db.connect()
+            self.manage_shifts.start()
+            self.daily_reminders.start()
+            log.info("Background loops started")
+        await self.sync_commands()
+        log.info(
+            "Slash commands synced (%d registered globally / %d pending)",
+            len(self._application_commands),
+            len(self._pending_application_commands),
+        )
         log.info("Cogs loaded and background loops started")
 
     # ---- Shift manager: prompt updates & auto-conclude ----
@@ -145,7 +154,7 @@ class ShiftBot(discord.Bot):
                         else:
                             next_week.append(d)
 
-                    lines = [f"📊 **Weekly Wrapup** — Last week's total: **{last_week_total}** words"]
+                    lines = [f"**Weekly Wrapup** — Last week's total: **{last_week_total}** words"]
                     if this_week:
                         lines.append("\n**Due this week:**")
                         for d in this_week:
@@ -168,7 +177,7 @@ class ShiftBot(discord.Bot):
                     )
                     try:
                         await channel.send(
-                            f"📝 **Daily Writing Update**\n"
+                            f"**Daily Writing Update**\n"
                             f"This week's total: **{weekly_total}** words\n"
                             f"Last week's total: **{last_week_total}** words"
                         )

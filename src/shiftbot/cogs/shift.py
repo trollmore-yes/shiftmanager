@@ -24,32 +24,39 @@ class ShiftCog(commands.Cog):
         every: discord.Option(str, description="Update frequency e.g. 30m", required=False, default="30m"),
     ):
         if ctx.guild_id is None:
-            await ctx.respond("❌ This command can only be used in a server.")
+            await ctx.respond("This command can only be used in a server.")
             return
         await ctx.defer()
         try:
             length_min = parse_duration(length)
             freq_min = parse_duration(every)
         except ValueError as e:
-            await ctx.respond(f"❌ {e}")
+            await ctx.respond(f"{e}")
             return
 
         if length_min <= 0 or freq_min <= 0:
-            await ctx.respond("❌ Length and frequency must be positive.")
+            await ctx.respond("Length and frequency must be positive.")
             return
 
         if goal <= 0:
-            await ctx.respond("❌ Word count goal must be positive.")
+            await ctx.respond("Word count goal must be positive.")
             return
 
         if starting < 0:
-            await ctx.respond("❌ Starting word count cannot be negative.")
+            await ctx.respond("Starting word count cannot be negative.")
             return
 
         existing = await self.bot.db.get_active_shift(ctx.author.id, ctx.guild_id)
         if existing is not None:
+            added_seconds = length_min * 60
+            await self.bot.db.extend_shift(existing["id"], added_seconds, goal)
+            new_total_length = int((existing["end_ts"] + added_seconds - existing["start_ts"]) / 60)
+            new_total_goal = existing["wc_goal"] + goal
             await ctx.respond(
-                "❌ You already have an active shift! End it with `/endshift` first."
+                f"Added **{length_min} min** and **{goal} words** to your active shift.\n"
+                f"New total length: **{new_total_length} min**\n"
+                f"New total goal: **{new_total_goal} words**\n"
+                "Use `/endshift` when you are ready to end the shift."
             )
             return
 
@@ -70,11 +77,10 @@ class ShiftCog(commands.Cog):
 
         rate_needed = goal / length_min if length_min > 0 else 0
         await ctx.respond(
-            f"✅ **Shift started!**\n"
+            f"**Shift started!**\n"
             f"Length: **{length_min} min** | Goal: **{goal} words**\n"
             f"Starting at: **{starting}** | Update every **{freq_min} min**\n"
-            f"Required pace: **{rate_needed:.1f} words/min**\n"
-            f"I'll ping you here for updates. Good luck! 🚀"
+            f"Required pace: **{rate_needed:.1f} words/min**"
         )
 
     @discord.slash_command(name="words", description="Report your current word count")
@@ -84,12 +90,12 @@ class ShiftCog(commands.Cog):
         wc: discord.Option(int, description="Your current total word count"),
     ):
         if ctx.guild_id is None:
-            await ctx.respond("❌ This command can only be used in a server.")
+            await ctx.respond("This command can only be used in a server.")
             return
         await ctx.defer()
         shift = await self.bot.db.get_active_shift(ctx.author.id, ctx.guild_id)
         if shift is None:
-            await ctx.respond("❌ You don't have an active shift. Start one with `/shift`.")
+            await ctx.respond("You don't have an active shift. Start one with `/shift`.")
             return
 
         now_ts = now(tz()).timestamp()
@@ -97,7 +103,7 @@ class ShiftCog(commands.Cog):
 
         if elapsed <= 0:
             projected = shift["start_wc"] + shift["wc_goal"]
-            await ctx.respond(f"📝 Just started! Current: **{wc}**. Goal by end: **{projected}**.")
+            await ctx.respond(f"Just started! Current: **{wc}**. Goal by end: **{projected}**.")
             await self.bot.db.update_last_wc(shift["id"], wc, now_ts)
             return
 
@@ -114,32 +120,24 @@ class ShiftCog(commands.Cog):
         pace_needed = remaining_wc / remaining_min if remaining_min > 0 else 0
         current_pace = rate * 60  # words per minute
 
-        if projected_end_wc >= shift["start_wc"] + shift["wc_goal"]:
-            status = "✅ **On track!**"
-        elif current_pace > 0:
-            status = "⚠️ **Behind** — pick up the pace!"
-        else:
-            status = "ℹ️ Getting started..."
-
         await ctx.respond(
-            f"📝 **Word count update**\n"
+            f"**Word count update**\n"
             f"Current: **{wc}** (Δ **{wc - shift['start_wc']}** from start)\n"
             f"Projected end: **{projected_end_wc:.0f}** (goal: **{shift['start_wc'] + shift['wc_goal']}**)\n"
             f"Pace: **{current_pace:.1f}** wpm | Needed: **{pace_needed:.1f}** wpm\n"
-            f"{status}"
         )
         await self.bot.db.update_last_wc(shift["id"], wc, now_ts)
 
     @discord.slash_command(name="endshift", description="End your active shift early")
     async def endshift(self, ctx: discord.ApplicationContext):
         if ctx.guild_id is None:
-            await ctx.respond("❌ This command can only be used in a server.")
+            await ctx.respond("This command can only be used in a server.")
             return
         await ctx.defer()
         shift = await self.bot.db.get_active_shift(ctx.author.id, ctx.guild_id)
         if shift is None:
-            await ctx.respond("❌ You don't have an active shift.")
+            await ctx.respond("You don't have an active shift.")
             return
 
         await self.bot.conclude_shift(shift)
-        await ctx.respond("🏁 Shift ended early.")
+        await ctx.respond("Ended shift.")
