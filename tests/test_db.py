@@ -92,6 +92,28 @@ async def test_deliverables(db):
 
 
 @pytest.mark.asyncio
+async def test_delete_incomplete_deliverable(db):
+    await db.create_deliverable(1, 10, "Chapter 1", "2026-08-01")
+    await db.create_deliverable(1, 10, "Chapter 2", "2026-08-15")
+
+    deleted = await db.delete_deliverable(1, 10, "Chapter 1")
+    assert deleted == 1
+
+    items = await db.get_incomplete_deliverables(1, 10)
+    assert len(items) == 1
+    assert items[0]["name"] == "Chapter 2"
+
+
+@pytest.mark.asyncio
+async def test_delete_completed_deliverable_does_not_remove_it(db):
+    await db.create_deliverable(1, 10, "Chapter 1", "2026-08-01")
+    await db.complete_deliverable(1, 10, "Chapter 1", 5000)
+
+    deleted = await db.delete_deliverable(1, 10, "Chapter 1")
+    assert deleted == 0
+
+
+@pytest.mark.asyncio
 async def test_guild_settings(db):
     await db.set_reminder_channel(10, 999)
     ch = await db.get_reminder_channel(10)

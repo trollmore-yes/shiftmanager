@@ -148,6 +148,14 @@ class Database:
             (time.time(), wc, user_id, guild_id, name),
         )
 
+    async def delete_deliverable(self, user_id: int, guild_id: int, name: str) -> int:
+        cur = await self._conn.execute(
+            "DELETE FROM deliverables WHERE user_id=? AND guild_id=? AND name=? AND completed=0",
+            (user_id, guild_id, name),
+        )
+        await self._conn.commit()
+        return cur.rowcount
+
     async def get_incomplete_deliverables(self, user_id: int, guild_id: int):
         return await self.fetchall(
             "SELECT * FROM deliverables WHERE user_id=? AND guild_id=? AND completed=0 ORDER BY deadline",

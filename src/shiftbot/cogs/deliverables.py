@@ -72,3 +72,16 @@ class DeliverablesCog(commands.Cog):
         if wc is not None:
             parts.append(f"Word count logged: **{wc}**")
         await ctx.respond("\n".join(parts))
+
+    @discord.slash_command(name="undeadline", description="Delete an incomplete deliverable")
+    async def undeadline(
+        self,
+        ctx: discord.ApplicationContext,
+        name: discord.Option(str, description="Deliverable name", autocomplete=autocomplete_deliverables),
+    ):
+        await ctx.defer()
+        deleted = await self.bot.db.delete_deliverable(ctx.author.id, ctx.guild_id, name)
+        if deleted == 0:
+            await ctx.respond(f"No incomplete deliverable named **{name}** found.")
+            return
+        await ctx.respond(f"Deleted deliverable **{name}**.")

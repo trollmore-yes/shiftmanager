@@ -66,8 +66,7 @@ class ShiftBot(discord.Bot):
                 if channel:
                     try:
                         await channel.send(
-                            f"<@{row['user_id']}> Time for an update! "
-                            f"Use `/words` to report your current word count."
+                            f"<@{row['user_id']}> Use `/words` to report your current word count."
                         )
                     except discord.Forbidden:
                         log.warning("Can't send to channel %s", row["channel_id"])
